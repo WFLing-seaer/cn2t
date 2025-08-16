@@ -1,0 +1,164 @@
+STANDARD_YMD:
+  WHEN:
+    - STRUCT:
+        BODY:
+          VAL: [-9999, 9999]
+          DESC: SEP
+    - STRUCT:
+        BODY:
+          VAL: [1, 12]
+          DESC: SEP
+    - STRUCT:
+        BODY:
+          VAL: [1, 31]
+  THEN:
+    - STRUCT: #此处三个STRUCT与上面一一对应
+        META:
+          ID: YR
+          STEP:
+            PERC: YR
+            AMP: 1
+    - STRUCT:
+        META:
+          ID: MO
+          STEP:
+            PERC: MO
+            AMP: 1
+    - STRUCT:
+        META:
+          ID: DA
+          STEP:
+            PERC: DA
+            AMP: 1
+
+STANDARD_HMS:
+  WHEN:
+    - STRUCT:
+        BODY:
+          VAL: [0, 23]
+          DESC: HR_OR_MI
+        META: N/A
+    - STRUCT:
+        BODY:
+          VAL: [0, 59]
+          DESC: HR_OR_MI
+        META: N/A
+    - STRUCT:
+        BODY:
+          VAL: [0, 59]
+        META: N/A
+  THEN:
+    - STRUCT:
+        META:
+          ID: HR
+          STEP:
+            PERC: HR
+            AMP: 1
+    - STRUCT:
+        META:
+          ID: MI
+          STEP:
+            PERC: MI
+            AMP: 1
+    - STRUCT:
+        META:
+          ID: SC
+          STEP:
+            PERC: SC
+            AMP: 1
+
+HM_AFTER_DATE:
+  WHEN:
+    - STRUCT:
+        META:
+          ID: DA
+          STEP:
+            PERC: DA
+            AMP: 1
+    - STRUCT:
+        BODY:
+          VAL: [0, 23]
+          DESC: HR_OR_MI
+        META: N/A
+    - STRUCT:
+        BODY:
+          VAL: [0, 59]
+        META: N/A
+  THEN:
+    - STRUCT: null
+    - STRUCT:
+        META:
+          ID: HR
+          STEP:
+            PERC: HR
+            AMP: 1
+    - STRUCT:
+        META:
+          ID: MI
+          STEP:
+            PERC: MI
+            AMP: 1
+
+M_AFTER_H:
+  WHEN:
+    - STRUCT:
+        BODY:
+          DESC: HR_OR_MI
+        META: N/A
+    - STRUCT:
+        BODY:
+          VAL: [0, 59]
+        META: N/A
+  THEN:
+    - STRUCT:
+        META:
+          ID: HR
+          STEP:
+            PERC: HR
+            AMP: 1
+    - STRUCT:
+        META:
+          ID: MI
+          STEP:
+            PERC: MI
+            AMP: 1
+
+M_AFTER_CERTAIN_H:
+  WHEN:
+    - STRUCT:
+        META:
+          ID: HR
+    - STRUCT:
+        BODY:
+          VAL: [0, 59]
+        META: N/A
+  THEN:
+    - STRUCT:
+        META:
+          ID: HR
+          STEP:
+            PERC: HR
+            AMP: 1
+    - STRUCT:
+        META:
+          ID: MI
+          STEP:
+            PERC: MI
+            AMP: 1
+
+SHORT_YEAR:
+  SITU:
+    - FLAG_SMART_YEAR #可以通过这个FLAG控制启用/禁用哪些模板
+  WHEN:
+    - STRUCT:
+        BODY:
+          VAL: [0, 99]
+        META:
+          ID: YR
+  THEN:
+    - STRUCT:
+        META:
+          CYCL:
+            PERIOD: 100
+            RANGE: [95, 5] #表示向前95年，向后5年
+

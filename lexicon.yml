@@ -1,0 +1,257 @@
+_NUM:
+  AS_WORD:
+    BODY:
+      VAL: "@" #就地代入实际值
+      STOP: VAL
+
+年:
+  AS_WORD: #用于分词后的第一步解析，从词解析为形式结构
+    BODY: &yrb
+      DESC: 年
+      STOP:
+        - VAL
+        - DESC
+  AS_STRUCT: &yrs #用于第二步解析，从形式结构解析为具有实际值的结构
+    META:
+      ID: YR
+      STEP:
+        PERC: YR
+        AMP: 1
+
+明年:
+  AS_WORD:
+    BODY:
+      MOD: "@-1"
+      <<:: *yrb
+  AS_STRUCT:
+    <<: *yrs
+
+月: &month
+  AS_WORD:
+    BODY:
+      DESC: 月
+      STOP:
+        - VAL
+        - DESC
+  AS_STRUCT:
+    META:
+      ID: MO
+      STEP:
+        PERC: MO
+        AMP: 1
+
+月份:
+  <<: *month
+
+日: &day
+  AS_WORD:
+    BODY:
+      DESC: 日
+      STOP:
+        - VAL
+        - DESC
+  AS_STRUCT:
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+号:
+  <<: *day
+
+天:
+  <<: *day
+
+时: &hour
+  AS_WORD:
+    BODY:
+      DESC: 时
+      STOP:
+        - VAL
+        - DESC
+  AS_STRUCT:
+    META:
+      ID: HR
+      STEP:
+        PERC: HR
+        AMP: 1
+
+点:
+  <<: *hour
+
+分:
+  AS_WORD:
+    BODY:
+      DESC: 分
+      STOP:
+        - VAL
+        - DESC
+  AS_STRUCT:
+    META:
+      ID: MI
+      STEP:
+        PERC: MI
+        AMP: 1
+
+秒:
+  AS_WORD:
+    BODY:
+      DESC: 秒
+      STOP: ALL
+  AS_STRUCT:
+    META:
+      ID: SC
+      STEP:
+        PERC: SC
+        AMP: 1
+
+/:
+  AS_WORD:
+    BODY:
+      DESC: SEP
+    STOP: ALL #STOP ALL表示停止整个STRUCT
+
+"-":
+  AS_WORD:
+    BODY:
+      DESC: SEP
+    STOP: ALL
+
+_:
+  AS_WORD:
+    BODY:
+      DESC: SEP
+    STOP: ALL
+
+".":
+  AS_WORD:
+    BODY:
+      DESC: SEP
+    STOP: ALL
+
+"：":
+  AS_WORD:
+    BODY:
+      DESC: SEP
+    STOP: ALL
+
+" ": null
+
+上:
+  AS_WORD:
+    BODY:
+      MOD: -1 #可以是数（直接加减）或者带%s占位符的字符串（给eval）
+      STOP: ALL
+
+世纪:
+  AS_WORD:
+    BODY:
+      DESC: 世纪
+      STOP: ALL
+  AS_STRUCT:
+    META:
+      ID: CT
+      STEP:
+        PERC: CT
+        AMP: 1
+
+年代:
+  AS_WORD:
+    BODY:
+      DESC: 年代
+      STOP: ALL
+  AS_STRUCT:
+    META:
+      ID: YR
+      STEP:
+        PERC: YR
+        AMP: 10
+
+":":
+  AS_WORD:
+    BODY:
+      DESC: "HR_OR_MI"
+      STOP: ALL
+
+下午: &pm
+  AS_WORD:
+    BODY:
+      VAL: 13 #此处放一个VAL为了防止它被合并进它的上一个STRUCT里，同时不进行STOP使得下一个VAL可以覆盖它
+      MOD: 12
+
+晚上:
+  <<: *pm
+
+PM:
+  <<: *pm
+
+半:
+  AS_WORD:
+    BODY:
+      VAL: 30
+
+中午:
+  AS_WORD:
+    BODY:
+      VAL: 12
+      DESC: 时
+      MOD: "val+12 if val <= 3 else val"
+
+午夜: &midnight
+  AS_WORD:
+    BODY:
+      VAL: 0
+      DESC: 时
+      MOD: "val if val <= 3 else val+12"
+
+半夜:
+  <<: *midnight
+
+上午: null
+
+凌晨: null
+
+明天:
+  AS_WORD:
+    BODY:
+      MOD: 1
+      STOP: ALL
+      DESC: 日
+
+今天:
+  AS_WORD:
+    BODY:
+      MOD: 0
+      STOP: ALL
+      DESC: 日
+
+昨天:
+  AS_WORD:
+    BODY:
+      MOD: -1
+      STOP: ALL
+      DESC: 日
+
+公历: null
+
+下个:
+  AS_WORD:
+    BODY:
+      MOD: 1
+      STOP: VAL
+
+后: &after
+  AS_WORD:
+    BODY:
+      MOD: "val + datum"
+      STOP: ALL
+
+以后:
+  <<: *after
+
+整:
+  AS_WORD:
+    BODY:
+      VAL: 0
+      STOP: ALL
