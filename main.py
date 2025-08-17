@@ -22,7 +22,6 @@ path_kwd_temp = os.path.expandvars("%temp%/cn2t_kwd.txt")
 with open(path_kwd_temp, "w", encoding="utf-8") as f:
     CUTWORD_EXCLUDE = {"_NUM", ".", " "}
     f.write("\n".join(keyword + "\t1\tN" for keyword in keywords if keyword not in CUTWORD_EXCLUDE))
-
 cutter = cutword.Cutter(dict_name=path_kwd_temp)
 
 
@@ -51,46 +50,41 @@ def run_merge_num(cut: list[str]) -> list[str]:
     return result
 
 
-def add_tag(seq: list[str]) -> list[tuple[dict, int | str]]:
+def add_tag(seq: list[str]) -> list[tuple[dict, int | str, str | None]]:
     result = []
     for word in seq:
         if word in lexicon:
             if lexicon[word] is not None:
-                result.append((lexicon[word], word))
+                result.append((lexicon[word], word, None))
             continue
         num = to_num(word)
-        if num is not None:
-            result.append((lexicon.get("_NUM"), num))
-        else:
+        if num is None:
             raise ValueError(f"Unknown word: {word}")
+        result.append((lexicon.get("_NUM"), num, word))
     return result
 
 
-def first_parser(tagged: list[tuple[dict, int | str]]) -> list[Struct]:
+def first_parser(tagged: list[tuple[dict, int | str, str | None]]) -> list[Struct]:
     structs: list[Struct] = []
     this = Struct()
-    for tag, value in tagged:
+    for tag, value, raw in tagged:
         try:
             as_word = tag.get("AS_WORD")
-
             if not as_word:
                 continue
-            this.add(**as_word, value=value)
+            this.add(**as_word, value=value, raw=raw)
         except AttributeError:
-
-            if this.body is not None:
+            if this.body is not None or this.meta is not None or this.datum is not None:
                 structs.append(this)
-            this = Struct(as_word, value=value)
+            this = Struct(as_word, value=value, raw=raw)
     if this.body is not None:
         structs.append(this)
-
     return structs
 
 
 def second_parser(structs: list[Struct]) -> list[Struct]:
     for struct in structs:
         struct.reset_stop()
-
     for struct in structs:
         if struct.body is not None and struct.body.desc is not None:
             desc = struct.body.desc
@@ -98,13 +92,11 @@ def second_parser(structs: list[Struct]) -> list[Struct]:
             if entry and "AS_STRUCT" in entry:
                 as_struct = entry["AS_STRUCT"]
                 struct.add(**as_struct)
-
     for template in templates.values():
         when_list = template.get("WHEN", [])
         then_list = template.get("THEN", [])
         match_len = len(when_list)
         assert len(then_list) == match_len
-
         for start_idx in range(len(structs) - match_len + 1):
             for i in range(match_len):
                 condition = when_list[i]
@@ -121,50 +113,45 @@ def second_parser(structs: list[Struct]) -> list[Struct]:
 def third_parser(structs: list[Struct], instant_merge: bool = False) -> tuple[list[Struct], relativedelta | None]:
     datum = Datum(datetime.datetime.now())
     field_map = {"CE": "CE", "YR": "years", "MO": "months", "DA": "days", "HR": "hours", "MI": "minutes", "SC": "seconds"}
-
     mod_fields = {}
-
     for struct in structs:
         if struct.datum is not None:
             datum.update(struct.datum)
-        if struct.body is not None and struct.body.mod is not None:
-            datum_this = None
-            if struct.meta is not None and struct.meta.ID is not None:
-                datum_this = datum.get_from_id(struct.meta.ID)
-            val = struct.body.val
-            if val is None:
-                if datum_this is None:
-                    continue
-                val = datum_this
-
-            tmp_val = val
-            for mod in struct.body.mod:
-                if isinstance(mod, str):
-                    tmp_val = eval(
-                        mod,
-                        {
-                            "val": tmp_val,
-                            "datum": datum_this,
-                            "Cdatum": datum,
-                            "datetime": datetime,
-                            "math": math,
-                            "struct": struct,
-                        },
-                    )
-                else:
-                    tmp_val += mod
-                if not instant_merge and struct.meta is not None and struct.meta.ID is not None:
-                    mod_fields[field_map[struct.meta.ID]] = tmp_val - val
-                else:
-                    val = tmp_val
-            struct.body.val = int(val)
-
+        if struct.body is None or struct.body.mod is None:
+            continue
+        datum_this = None
+        if struct.meta is not None and struct.meta.ID is not None:
+            datum_this = datum.get_from_id(struct.meta.ID)
+        val = struct.body.val
+        if val is None and datum_this is not None:
+            val = datum_this
+        if val is None:
+            continue
+        tmp_val = val
+        for mod in struct.body.mod:
+            if isinstance(mod, str):
+                tmp_val = eval(
+                    mod,
+                    {
+                        "val": tmp_val,
+                        "datum": datum_this,
+                        "Cdatum": datum,
+                        "datetime": datetime,
+                        "math": math,
+                        "struct": struct,
+                    },
+                )
+            else:
+                tmp_val += mod
+            if not instant_merge and struct.meta is not None and struct.meta.ID is not None:
+                mod_fields[field_map[struct.meta.ID]] = tmp_val - val
+            else:
+                val = tmp_val
+        struct.body.val = int(val)
     if "CE" in mod_fields:
         mod_fields["years"] = mod_fields.get("years", 0) + mod_fields["CE"] * 100
         del mod_fields["CE"]
-
     modifier = None if instant_merge else relativedelta(**mod_fields)
-
     return structs, modifier
 
 
@@ -195,33 +182,24 @@ def to_datetime(structs: list[Struct], modifier: relativedelta | None = None) ->
             continue
         if perc_level.get(struct.meta.step.perc, 0) > perc_level[step[0]]:
             step = (struct.meta.step.perc, struct.meta.step.amp)
-
     now = datetime.datetime.now()
-
     for must in ("YR", "MO", "DA"):
         if field_map[must] not in fields:
             fields[field_map[must]] = getattr(now, field_map[must]) if perc_level[must] < perc_level[step[0]] else 1
-
     step = (field_map[step[0]], step[1])
-
     if "CE" in fields:
         fields["year"] = fields.get("year", 0) + fields["CE"] * 100
         del fields["CE"]
-
     if step[0] == "CE":
         step = ("year", step[1] * 100)
-
     dt = datetime.datetime(**fields)
-
     if modifier is not None:
         dt += modifier
-
     try:
         rel_delta = relativedelta(**{f"{step[0]}s": int(step[1])})
         edt = dt + rel_delta
     except OverflowError:
         edt = dt
-
     return (dt, edt)
 
 
@@ -229,6 +207,7 @@ def full_parse(text: str) -> tuple[datetime.datetime, datetime.datetime] | None:
     try:
         return to_datetime(*third_parser(second_parser(first_parser(add_tag(run_merge_num(cutter.cutword(text)))))))
     except Exception:
+        # traceback.print_exc()
         return None
 
 
@@ -279,11 +258,12 @@ if __name__ == "__main__":
         "2025年8月32日",
         "嘉靖十五年",
     ]
-
+    print("测试时间:", datetime.datetime.now())
     for testing in testings:
         print("=" * 24)
         print(testing)
         if dt := full_parse(testing):
+            # print(third_parser(second_parser(first_parser(add_tag(run_merge_num(cutter.cutword(testing)))))))
             print("cn2t:\t\t", dt[0].strftime("%Y-%m-%d %H:%M:%S"), "~", dt[1].strftime("%Y-%m-%d %H:%M:%S"))
         else:
             print("cn2t:\t\t", "<解析失败>")

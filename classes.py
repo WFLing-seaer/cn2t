@@ -13,20 +13,19 @@ class Struct:
     meta: Meta | None = None
     datum: Datum | None = None
 
-    def __init__(self, kwargs=None, value=None):
+    def __init__(self, kwargs=None, value=None, raw=None):
         self._stopped = set()
         if kwargs is not None:
-            self.add(**kwargs, value=value)
+            self.add(**kwargs, value=value, raw=raw)
 
-    def add(self, BODY: dict | None = None, META: dict | None = None, DATUM: dict | None = None, value=None, STOP=None):
-
+    def add(self, BODY: dict | None = None, META: dict | None = None, DATUM: dict | None = None, value=None, raw=None, STOP=None):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
         if BODY is not None:
             if self.body:
-                self.body.add(**BODY, value=value)
+                self.body.add(**BODY, value=value, raw=raw)
             else:
-                self.body = Body(BODY, value=value)
+                self.body = Body(BODY, value=value, raw=raw)
         if META is not None:
             if self.meta:
                 self.meta.add(**META)
@@ -42,27 +41,29 @@ class Struct:
     ):
         result = True
         if BODY == "N/A":
-            return self.body is None
+            result &= self.body is None
         elif BODY is not None:
             if self.body is None:
-                return set(BODY.values()) == {"N/A"}  # 如果values（一层检测子元素）都是N/A，那么“如果没有body那也一定没有子元素”而返回True。
-            result &= self.body.check(**BODY)
+                result &= set(BODY.values()) == {"N/A"}  # 如果values（一层检测子元素）都是N/A，那么“如果没有body那也一定没有子元素”而返回True。
+            else:
+                result &= self.body.check(**BODY)
         if META == "N/A":
-            return self.meta is None
+            result &= self.meta is None
         elif META is not None:
             if self.meta is None:
-                return set(META.values()) == {"N/A"}
-            result &= self.meta.check(**META)
+                result &= set(META.values()) == {"N/A"}
+            else:
+                result &= self.meta.check(**META)
         if DATUM == "N/A":
-            return self.datum is None
+            result &= self.datum is None
         elif DATUM is not None:
             if self.datum is None:
-                return set(DATUM.values()) == {"N/A"}
-            result &= all(getattr(self.datum, k.lower(), object()) == (None if v == "N/A" else v) for k, v in DATUM.items())
+                result &= set(DATUM.values()) == {"N/A"}
+            else:
+                result &= all(getattr(self.datum, k.lower(), object()) == (None if v == "N/A" else v) for k, v in DATUM.items())
         return result
 
     def stop(self, feat):
-
         if self._stopped is None:
             raise AttributeError("Cannot stop cuz it's already stopped")
         if isinstance(feat, list):
@@ -80,7 +81,6 @@ class Struct:
             self.meta.reset_stop()
 
     def __setattr__(self, name, value):
-
         if name == "_stopped":
             self.__dict__[name] = value
         elif (self._stopped is None) or (name.upper() in self._stopped):
@@ -96,9 +96,9 @@ class Body(Struct):
     val: int | None = None
     desc: str | None = None
     mod: list[float | str] | None = None
+    raw: str | None = None
 
-    def add(self, VAL: int | None = None, DESC: str | None = None, MOD: float | str | None = None, value=None, STOP=None):
-
+    def add(self, VAL: int | None = None, DESC: str | None = None, MOD: float | str | None = None, value=None, raw=None, STOP=None):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
         if VAL is not None:
@@ -111,25 +111,35 @@ class Body(Struct):
             self.mod.append(MOD)
         if STOP is not None:
             self.stop(STOP)
+        if raw is not None:
+            self.raw = raw
 
-    def check(self, VAL: int | list[int] | Literal["N/A"] | None = None, DESC: str | None = None):
+    def check(self, VAL: int | list[int] | Literal["N/A"] | None = None, DESC: str | None = None, MOD: float | str | None = None, RAW=None):
         try:
             result = True
+            if RAW is not None:
+                result &= eval(RAW, {"raw": self.raw})
             if VAL == "N/A":
-                return self.val is None
+                result &= self.val is None
             elif VAL is not None:
                 if self.val is None:
                     return False
-                if isinstance(VAL, list):
+                elif isinstance(VAL, list):
                     result &= self.val >= VAL[0] and self.val <= VAL[1]
                 else:
                     result &= self.val == VAL
             if DESC == "N/A":
-                return self.desc is None
+                result &= self.desc is None
             elif DESC is not None:
                 if self.desc is None:
                     return False
                 result &= self.desc == DESC
+            if MOD == "N/A":
+                result &= self.mod is None
+            elif MOD is not None:
+                if self.mod is None:
+                    return False
+                result &= MOD in self.mod
             return result
         except TypeError:
             return False
@@ -138,7 +148,7 @@ class Body(Struct):
         self._stopped = set()
 
     def __repr__(self):
-        return f"BODY\n  VAL: {self.val}\n  DESC: {self.desc}\n  MOD: {self.mod}"
+        return f"BODY\n  VAL: {self.val}\n  DESC: {self.desc}\n  MOD: {self.mod}\n  RAW: {self.raw}"
 
 
 class Meta(Struct):
@@ -146,8 +156,7 @@ class Meta(Struct):
     step: Step | None = None
     cycl: Cycl | None = None
 
-    def add(self, ID: str | None = None, STEP: dict | None = None, CYCL: dict | None = None, value=None, STOP=None):
-
+    def add(self, ID: str | None = None, STEP: dict | None = None, CYCL: dict | None = None, value=None, raw=None, STOP=None):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
         if ID is not None:
@@ -169,7 +178,7 @@ class Meta(Struct):
         try:
             result = True
             if ID == "N/A":
-                return self.ID is None
+                result &= self.ID is None
             elif ID is not None:
                 if self.ID is None:
                     return False
@@ -178,17 +187,19 @@ class Meta(Struct):
                 else:
                     result &= self.ID == ID
             if STEP == "N/A":
-                return self.step is None
+                result &= self.step is None
             elif STEP is not None:
                 if self.step is None:
-                    return set(STEP.values()) == {"N/A"}
-                result &= self.step.check(**STEP)
+                    result &= set(STEP.values()) == {"N/A"}
+                else:
+                    result &= self.step.check(**STEP)
             if CYCL == "N/A":
-                return self.cycl is None
+                result &= self.cycl is None
             elif CYCL is not None:
                 if self.cycl is None:
-                    return set(CYCL.values()) == {"N/A"}
-                result &= self.cycl.check(**CYCL)
+                    result &= set(CYCL.values()) == {"N/A"}
+                else:
+                    result &= self.cycl.check(**CYCL)
             return result
         except TypeError:
             return False
@@ -208,8 +219,7 @@ class Step(Struct):
     perc: str | None = None
     amp: float | None = None
 
-    def add(self, PERC: str | None = None, AMP: float | None = None, value=None, STOP=None):
-
+    def add(self, PERC: str | None = None, AMP: float | None = None, value=None, raw=None, STOP=None):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
         if PERC is not None:
@@ -223,7 +233,7 @@ class Step(Struct):
         try:
             result = True
             if PERC == "N/A":
-                return self.perc is None
+                result &= self.perc is None
             elif PERC is not None:
                 if self.perc is None:
                     return False
@@ -232,7 +242,7 @@ class Step(Struct):
                 else:
                     result &= self.perc == PERC
             if AMP == "N/A":
-                return self.amp is None
+                result &= self.amp is None
             elif AMP is not None:
                 if self.amp is None:
                     return False
@@ -255,8 +265,7 @@ class Cycl(Struct):
     period: float | None = None
     range: tuple[float, float] | None = None
 
-    def add(self, PERIOD: float | None = None, RANGE: tuple[float, float] | None = None, value=None, STOP=None):
-
+    def add(self, PERIOD: float | None = None, RANGE: tuple[float, float] | None = None, value=None, raw=None, STOP=None):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
         if PERIOD is not None:
@@ -274,7 +283,7 @@ class Cycl(Struct):
         try:
             result = True
             if PERIOD == "N/A":
-                return self.period is None
+                result &= self.period is None
             elif PERIOD is not None:
                 if self.period is None:
                     return False
@@ -283,7 +292,7 @@ class Cycl(Struct):
                 else:
                     result &= self.period == PERIOD
             if RANGE == "N/A":
-                return self.range is None
+                result &= self.range is None
             elif RANGE is not None:
                 if self.range is None:
                     return False

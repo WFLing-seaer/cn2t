@@ -154,6 +154,7 @@ SHORT_YEAR:
   WHEN:
     - STRUCT:
         BODY:
+          RAW: "len(raw) <= 3"
           VAL: [0, 99]
         META:
           ID: YR
