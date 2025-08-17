@@ -11,13 +11,14 @@ def tab(n, s):
 class Struct:
     body: Body | None = None
     meta: Meta | None = None
+    datum: Datum | None = None
 
     def __init__(self, kwargs=None, value=None):
         self._stopped = set()
         if kwargs is not None:
             self.add(**kwargs, value=value)
 
-    def add(self, BODY: dict | None = None, META: dict | None = None, value=None, STOP=None):
+    def add(self, BODY: dict | None = None, META: dict | None = None, DATUM: dict | None = None, value=None, STOP=None):
 
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
@@ -31,6 +32,8 @@ class Struct:
                 self.meta.add(**META)
             else:
                 self.meta = Meta(META)
+        if DATUM is not None:
+            self.datum = Datum({k.lower(): v for k, v in DATUM.items()})
         if STOP is not None:
             self.stop(STOP)
 
@@ -40,13 +43,13 @@ class Struct:
             return self.body is None
         elif BODY is not None:
             if self.body is None:
-                return False
+                return set(BODY.values()) == {"N/A"}  # 如果values（一层检测子元素）都是N/A，那么“如果没有body那也一定没有子元素”而返回True。
             result &= self.body.check(**BODY)
         if META == "N/A":
             return self.meta is None
         elif META is not None:
             if self.meta is None:
-                return False
+                return set(META.values()) == {"N/A"}
             result &= self.meta.check(**META)
         return result
 
@@ -78,7 +81,7 @@ class Struct:
             self.__dict__[name] = value
 
     def __repr__(self):
-        return f"\nSTRUCT\n{tab(2, repr(self.body))}\n{tab(2, repr(self.meta))}"
+        return f"\nSTRUCT\n{tab(2, repr(self.body))}\n{tab(2, repr(self.meta))}\n{tab(2, repr(self.datum))}"
 
 
 class Body(Struct):
@@ -127,7 +130,7 @@ class Body(Struct):
         self._stopped = set()
 
     def __repr__(self):
-        return f"BODY\n  VAL: {self.val}\n  DESC: {self.desc}"
+        return f"BODY\n  VAL: {self.val}\n  DESC: {self.desc}\n  MOD: {self.mod}"
 
 
 class Meta(Struct):
@@ -170,13 +173,13 @@ class Meta(Struct):
                 return self.step is None
             elif STEP is not None:
                 if self.step is None:
-                    return False
+                    return set(STEP.values()) == {"N/A"}
                 result &= self.step.check(**STEP)
             if CYCL == "N/A":
                 return self.cycl is None
             elif CYCL is not None:
                 if self.cycl is None:
-                    return False
+                    return set(CYCL.values()) == {"N/A"}
                 result &= self.cycl.check(**CYCL)
             return result
         except TypeError:
@@ -294,29 +297,60 @@ class Cycl(Struct):
 
 
 class Datum:
-    def __init__(self, datum: datetime):
-        self.datum = datum
+    def __init__(self, datum: dict | datetime):
+        if isinstance(datum, datetime):
+            self.year = datum.year
+            self.month = datum.month
+            self.day = datum.day
+            self.hour = datum.hour
+            self.minute = datum.minute
+            self.second = datum.second
+        else:
+            self.year = datum.get("year")
+            self.month = datum.get("month")
+            self.day = datum.get("day")
+            self.hour = datum.get("hour")
+            self.minute = datum.get("minute")
+            self.second = datum.get("second")
 
     def get_from_id(self, ID: str, amp: float = 1):
         match ID, amp:
             case "CE", _:
-                return self.datum.year // 100
+                return self.year and self.year // 100
             case "YR", 10:
-                return self.datum.year // 10 * 10
+                return self.year and self.year // 10 * 10
             case "YR", _:
-                return self.datum.year
+                return self.year
             case "MO", _:
-                return self.datum.month
+                return self.month
             case "DA", _:
-                return self.datum.day
+                return self.day
             case "HR", _:
-                return self.datum.hour
+                return self.hour
             case "MI", _:
-                return self.datum.minute
+                return self.minute
             case "SC", _:
-                return self.datum.second
+                return self.second
             case _:
                 raise ValueError(f"Unknown ID: {ID}")
 
+    def update(self, other: Datum):
+        if other.year is not None:
+            self.year = other.year
+        if other.month is not None:
+            self.month = other.month
+        if other.day is not None:
+            self.day = other.day
+        if other.hour is not None:
+            self.hour = other.hour
+        if other.minute is not None:
+            self.minute = other.minute
+        if other.second is not None:
+            self.second = other.second
+
     def __repr__(self):
-        return f"DATUM\n  {self.datum.year}-{self.datum.month:02d}-{self.datum.day:02d} {self.datum.hour:02d}:{self.datum.minute:02d}:{self.datum.second:02d}"
+        return (
+            f"DATUM\n  {self.year or "NA"}-{self.month or "NA":02}-{self.day or "NA":02} "
+            f"{"--" if self.hour is None else self.hour:02}:{"--" if self.minute is None else self.minute:02}:"
+            f"{"--" if self.second is None else self.second:02}"
+        )

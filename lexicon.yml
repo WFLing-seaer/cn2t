@@ -63,6 +63,23 @@ _NUM:
 天:
   <<: *day
 
+周: &week
+  AS_WORD:
+    BODY:
+      DESC: 周
+      STOP:
+        - VAL
+        - DESC
+  AS_STRUCT:
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 7
+
+星期:
+  <<: *week
+
 时: &hour
   AS_WORD:
     BODY:
@@ -138,12 +155,6 @@ _:
 
 " ": null
 
-上:
-  AS_WORD:
-    BODY:
-      MOD: -1 #可以是数（直接加减）或者带%s占位符的字符串（给eval）
-      STOP: ALL
-
 世纪:
   AS_WORD:
     BODY:
@@ -210,7 +221,16 @@ PM:
 
 上午: null
 
-凌晨: null
+凌晨:
+  AS_WORD:
+    BODY:
+      VAL: 0
+      DESC: 凌晨
+  AS_STRUCT:
+    META:
+      STEP:
+        PERC: HR
+        AMP: 5
 
 明天:
   AS_WORD:
@@ -235,23 +255,157 @@ PM:
 
 公历: null
 
-下个:
+下个: &next
   AS_WORD:
     BODY:
-      MOD: 1
+      MOD: "val + (struct.meta and struct.meta.step and struct.meta.step.amp or 1)"
       STOP: VAL
+
+下:
+  <<: *next
+
+上个: &prev
+  AS_WORD:
+    BODY:
+      MOD: "val - (struct.meta and struct.meta.step and struct.meta.step.amp or 1)"
+      STOP: VAL
+
+上:
+  <<: *prev
 
 后: &after
   AS_WORD:
     BODY:
-      MOD: "val + datum"
+      MOD: "datum + val * (struct.meta and struct.meta.step and struct.meta.step.amp or 1)"
       STOP: ALL
 
 以后:
   <<: *after
+
+前: &before
+  AS_WORD:
+    BODY:
+      MOD: "datum - val * (struct.meta and struct.meta.step and struct.meta.step.amp or 1)"
+      STOP: ALL
+
+以前:
+  <<: *before
+
+今年:
+  AS_WORD:
+    BODY:
+      STOP: ALL
+      DESC: 年
+
+去年:
+  AS_WORD:
+    BODY:
+      MOD: -1
+      STOP: ALL
+      DESC: 年
+
+前年:
+  AS_WORD:
+    BODY:
+      MOD: -2
+      STOP: ALL
+      DESC: 年
 
 整:
   AS_WORD:
     BODY:
       VAL: 0
       STOP: ALL
+
+周一: &WDmon
+  AS_WORD:
+    BODY:
+      MOD: "val-datetime.date(year=Cdatum.year,month=Cdatum.month,day=Cdatum.day).weekday()"
+      DESC: weekday
+      STOP: ALL
+
+星期一:
+  <<: *WDmon
+
+周二: &WDtue
+  AS_WORD:
+    BODY:
+      MOD: "val+1-datetime.date(year=Cdatum.year,month=Cdatum.month,day=Cdatum.day).weekday()"
+      DESC: weekday
+      STOP: ALL
+
+星期二:
+  <<: *WDtue
+
+周三: &WDwed
+  AS_WORD:
+    BODY:
+      MOD: "val+2-datetime.date(year=Cdatum.year,month=Cdatum.month,day=Cdatum.day).weekday()"
+      DESC: weekday
+      STOP: ALL
+
+星期三:
+  <<: *WDwed
+
+周四: &WDthu
+  AS_WORD:
+    BODY:
+      MOD: "val+3-datetime.date(year=Cdatum.year,month=Cdatum.month,day=Cdatum.day).weekday()"
+      DESC: weekday
+      STOP: ALL
+
+星期四:
+  <<: *WDthu
+
+周五: &WDfri
+  AS_WORD:
+    BODY:
+      MOD: "val+4-datetime.date(year=Cdatum.year,month=Cdatum.month,day=Cdatum.day).weekday()"
+      DESC: weekday
+      STOP: ALL
+
+星期五:
+  <<: *WDfri
+
+周六: &WDsat
+  AS_WORD:
+    BODY:
+      MOD: "val+5-datetime.date(year=Cdatum.year,month=Cdatum.month,day=Cdatum.day).weekday()"
+      DESC: weekday
+      STOP: ALL
+
+星期六:
+  <<: *WDsat
+
+周日: &WDsun
+  AS_WORD:
+    BODY:
+      MOD: "val+6-datetime.date(year=Cdatum.year,month=Cdatum.month,day=Cdatum.day).weekday()"
+      DESC: weekday
+      STOP: ALL
+
+星期日:
+  <<: *WDsun
+
+周天:
+  <<: *WDsun
+
+星期天:
+  <<: *WDsun
+
+weekday:
+  AS_STRUCT:
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 7
+      CYCL:
+        PERIOD: 7
+
+嘉靖: #没错我就是面向测试用例编程怎么了.jpg
+  AS_WORD:
+    DATUM:
+      year: 1521
+    BODY:
+      MOD: 1521

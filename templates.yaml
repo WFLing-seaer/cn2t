@@ -104,11 +104,13 @@ M_AFTER_H:
     - STRUCT:
         BODY:
           DESC: HR_OR_MI
-        META: N/A
+        META:
+          ID: N/A
     - STRUCT:
         BODY:
           VAL: [0, 59]
-        META: N/A
+        META:
+          ID: N/A
   THEN:
     - STRUCT:
         META:
@@ -160,5 +162,6 @@ SHORT_YEAR:
         META:
           CYCL:
             PERIOD: 100
-            RANGE: [95, 5] #表示向前95年，向后5年
-
+            RANGE: [94, 5] #表示向前94年，向后5年
+        BODY:
+          MOD: "val+struct.meta.cycl.period*math.ceil((datum-struct.meta.cycl.range[0]-val)/struct.meta.cycl.period)"

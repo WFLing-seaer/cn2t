@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
+import math
 import os
-from typing import cast
+from typing import Literal, cast
 
 import cn2an
 import cutword
@@ -39,14 +40,13 @@ def run_merge_num(cut: list[str]) -> list[str]:
     result = []
     last_is_num = False
     for word in cut:
-        if to_num(word) is not None:
-            if last_is_num:
-                result[-1] += word
-            else:
-                last_is_num = True
-                result.append(word)
-        else:
+        if to_num(word) is None:
             last_is_num = False
+            result.append(word)
+        elif last_is_num:
+            result[-1] += word
+        else:
+            last_is_num = True
             result.append(word)
     return result
 
@@ -113,8 +113,7 @@ def second_parser(structs: list[Struct]) -> list[Struct]:
             else:
                 for i in range(match_len):
                     rule = then_list[i]
-                    struct_rule = rule.get("STRUCT", {})
-                    if struct_rule:
+                    if struct_rule := rule.get("STRUCT"):
                         structs[start_idx + i].add(**struct_rule)
     return structs
 
@@ -126,6 +125,8 @@ def third_parser(structs: list[Struct], instant_merge: bool = False) -> tuple[li
     mod_fields = {}
 
     for struct in structs:
+        if struct.datum is not None:
+            datum.update(struct.datum)
         if struct.body is not None and struct.body.mod is not None:
             datum_this = None
             if struct.meta is not None and struct.meta.ID is not None:
@@ -135,13 +136,27 @@ def third_parser(structs: list[Struct], instant_merge: bool = False) -> tuple[li
                 if datum_this is None:
                     continue
                 val = datum_this
+
+            tmp_val = val
             for mod in struct.body.mod:
                 if isinstance(mod, str):
-                    mod = eval(mod, {"val": val, "datum": datum_this}) - val
-                if not instant_merge and struct.meta is not None and struct.meta.ID is not None:
-                    mod_fields[field_map[struct.meta.ID]] = mod
+                    tmp_val = eval(
+                        mod,
+                        {
+                            "val": tmp_val,
+                            "datum": datum_this,
+                            "Cdatum": datum,
+                            "datetime": datetime,
+                            "math": math,
+                            "struct": struct,
+                        },
+                    )
                 else:
-                    val += mod
+                    tmp_val += mod
+                if not instant_merge and struct.meta is not None and struct.meta.ID is not None:
+                    mod_fields[field_map[struct.meta.ID]] = tmp_val - val
+                else:
+                    val = tmp_val
             struct.body.val = int(val)
 
     if "CE" in mod_fields:
@@ -154,14 +169,26 @@ def third_parser(structs: list[Struct], instant_merge: bool = False) -> tuple[li
 
 
 def to_datetime(structs: list[Struct], modifier: relativedelta | None = None) -> tuple[datetime.datetime, datetime.datetime]:
-    field_map = {"CE": "CE", "YR": "year", "MO": "month", "DA": "day", "HR": "hour", "MI": "minute", "SC": "second"}
+    field_map: dict[str, Literal["CE", "year", "month", "day", "hour", "minute", "second"]] = {
+        "CE": "CE",
+        "YR": "year",
+        "MO": "month",
+        "DA": "day",
+        "HR": "hour",
+        "MI": "minute",
+        "SC": "second",
+    }
     perc_level = {"CE": -1, "YR": 0, "MO": 1, "DA": 2, "HR": 3, "MI": 4, "SC": 5}
-    fields = {}
-    for struct in structs:
-        if struct.meta is None or struct.meta.ID is None or struct.meta.ID not in field_map or struct.body is None or struct.body.val is None:
-            continue
-        fields[field_map[struct.meta.ID]] = struct.body.val
-
+    # 别问为什么这有一大坨Literal，问就是不写的话类型检查不给过
+    fields: dict[Literal["CE", "year", "month", "day", "hour", "minute", "second"], int] = {
+        field_map[struct.meta.ID]: struct.body.val
+        for struct in structs
+        if struct.meta is not None
+        and struct.meta.ID is not None
+        and struct.meta.ID in field_map
+        and struct.body is not None
+        and struct.body.val is not None
+    }
     step = ("CE", 0)
     for struct in structs:
         if struct.meta is None or struct.meta.step is None or struct.meta.step.amp is None or struct.meta.step.perc is None:
@@ -250,13 +277,13 @@ if __name__ == "__main__":
         "2025年农历八月十六",
         "无效时间格式",
         "2025年8月32日",
+        "嘉靖十五年",
     ]
 
     for testing in testings:
         print("=" * 24)
         print(testing)
-        dt = full_parse(testing)
-        if dt:
+        if dt := full_parse(testing):
             print("cn2t:\t\t", dt[0].strftime("%Y-%m-%d %H:%M:%S"), "~", dt[1].strftime("%Y-%m-%d %H:%M:%S"))
         else:
             print("cn2t:\t\t", "<解析失败>")
