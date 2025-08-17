@@ -70,12 +70,13 @@ _NUM:
       STOP:
         - VAL
         - DESC
-  AS_STRUCT:
     META:
       ID: DA
       STEP:
         PERC: DA
         AMP: 7
+      CYCL:
+        PERIOD: 7
 
 星期:
   <<: *week
@@ -258,7 +259,7 @@ PM:
 下个: &next
   AS_WORD:
     BODY:
-      MOD: "val + (struct.meta and struct.meta.step and struct.meta.step.amp or 1)"
+      MOD: "val + (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
       STOP: VAL
 
 下:
@@ -267,7 +268,7 @@ PM:
 上个: &prev
   AS_WORD:
     BODY:
-      MOD: "val - (struct.meta and struct.meta.step and struct.meta.step.amp or 1)"
+      MOD: "val - (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
       STOP: VAL
 
 上:
@@ -276,8 +277,11 @@ PM:
 后: &after
   AS_WORD:
     BODY:
-      MOD: "datum + val * (struct.meta and struct.meta.step and struct.meta.step.amp or 1)"
+      MOD: "datum + val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
       STOP: ALL
+    META:
+      STEP:
+        AMP: 1 #xx前/后一般指的是特定的一天/月/年等
 
 以后:
   <<: *after
@@ -285,8 +289,11 @@ PM:
 前: &before
   AS_WORD:
     BODY:
-      MOD: "datum - val * (struct.meta and struct.meta.step and struct.meta.step.amp or 1)"
+      MOD: "datum - val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
       STOP: ALL
+    META:
+      STEP:
+        AMP: 1
 
 以前:
   <<: *before
@@ -399,7 +406,7 @@ weekday:
       ID: DA
       STEP:
         PERC: DA
-        AMP: 7
+        AMP: 1
       CYCL:
         PERIOD: 7
 
