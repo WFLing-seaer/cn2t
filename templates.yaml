@@ -157,6 +157,7 @@ SHORT_YEAR:
           VAL: [0, 99]
         META:
           ID: YR
+        DATUM: N/A
   THEN:
     - STRUCT:
         META:

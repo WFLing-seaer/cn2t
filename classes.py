@@ -37,7 +37,9 @@ class Struct:
         if STOP is not None:
             self.stop(STOP)
 
-    def check(self, BODY: dict | Literal["N/A"] | None = None, META: dict | Literal["N/A"] | None = None):
+    def check(
+        self, BODY: dict | Literal["N/A"] | None = None, META: dict | Literal["N/A"] | None = None, DATUM: dict | Literal["N/A"] | None = None
+    ):
         result = True
         if BODY == "N/A":
             return self.body is None
@@ -51,6 +53,12 @@ class Struct:
             if self.meta is None:
                 return set(META.values()) == {"N/A"}
             result &= self.meta.check(**META)
+        if DATUM == "N/A":
+            return self.datum is None
+        elif DATUM is not None:
+            if self.datum is None:
+                return set(DATUM.values()) == {"N/A"}
+            result &= all(getattr(self.datum, k.lower(), object()) == (None if v == "N/A" else v) for k, v in DATUM.items())
         return result
 
     def stop(self, feat):
