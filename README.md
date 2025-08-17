@@ -1,10 +1,12 @@
 # 中文自然语言时间解析器 (CN2T)
 
-高效、灵活的中文自然语言时间解析器。  
+灵活、轻量级的中文自然语言时间解析器。  
 能够将各种中文时间表达式转换为时间范围。  
-通过自定义lexicon和template，可以实现更复杂的语法解析，~~当然也可以用来解析别的语言（确信~~
-
-理论上，对于中文来说，准确度能够远超[dateparser](github.com/scrapinghub/dateparser)。
+通过自定义lexicon和template，可以实现更复杂的语法解析，~~当然也可以用来解析别的语言（确信~~  
+  
+理论上，对于中文来说，准确度能够远超[dateparser](github.com/scrapinghub/dateparser)。  
+  
+**整个项目不依赖任何大模型实现功能**
 
 ## 适用范围
 
@@ -72,8 +74,8 @@ else: # 失败会返回None
 
 7. `to_datetime` - 解析为datetime
 
-最后把结构转换成更常用的datetime。
-当然如果可以的话，我还是建议直接和三步解析生成的结构交互，把`instant_merge`设为True之后直接生成的结构相比datetime能有更多更丰富的信息。
+最后把结构转换成更常用的datetime。  
+当然如果可以的话，我还是建议直接和三步解析生成的结构交互，把`instant_merge`设为True之后直接生成的结构相比datetime能有更多更丰富的信息。  
 
 （题外话：`full_parse`的实现其实是这样的——
 ```python
@@ -259,5 +261,5 @@ dateparser:      <解析失败>
 cn2t:            <解析失败>
 dateparser:      <解析失败>
 ```
-涉及星期的玩意解析不了，因为写这个README的时候lexicon还没支持星期相关的东西呢）
+涉及星期的玩意解析不了，因为写这个README的时候lexicon还没支持星期相关的东西呢）  
 有几个解析不完备的（比如凌晨解析成一整天了）是因为词表不全，所以多交PR喵多交PR谢谢喵
