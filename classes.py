@@ -39,29 +39,34 @@ class Struct:
     def check(
         self, BODY: dict | Literal["N/A"] | None = None, META: dict | Literal["N/A"] | None = None, DATUM: dict | Literal["N/A"] | None = None
     ):
-        result = True
         if BODY == "N/A":
-            result &= self.body is None
+            if self.body is not None:
+                return False
         elif BODY is not None:
             if self.body is None:
-                result &= set(BODY.values()) == {"N/A"}  # 如果values（一层检测子元素）都是N/A，那么“如果没有body那也一定没有子元素”而返回True。
-            else:
-                result &= self.body.check(**BODY)
+                if set(BODY.values()) != {"N/A"}:
+                    return False  # 如果values（一层检测子元素）都是N/A，那么“如果没有body那也一定没有子元素”而返回True。
+            elif not (self.body.check(**BODY)):
+                return False
         if META == "N/A":
-            result &= self.meta is None
+            if self.meta is not None:
+                return False
         elif META is not None:
             if self.meta is None:
-                result &= set(META.values()) == {"N/A"}
-            else:
-                result &= self.meta.check(**META)
+                if set(META.values()) != {"N/A"}:
+                    return False
+            elif not (self.meta.check(**META)):
+                return False
         if DATUM == "N/A":
-            result &= self.datum is None
+            if self.datum is not None:
+                return False
         elif DATUM is not None:
             if self.datum is None:
-                result &= set(DATUM.values()) == {"N/A"}
-            else:
-                result &= all(getattr(self.datum, k.lower(), object()) == (None if v == "N/A" else v) for k, v in DATUM.items())
-        return result
+                if set(DATUM.values()) != {"N/A"}:
+                    return False
+            elif any(getattr(self.datum, k.lower(), object()) != (None if v == "N/A" else v) for k, v in DATUM.items()):
+                return False
+        return True
 
     def stop(self, feat):
         if self._stopped is None:
@@ -116,31 +121,35 @@ class Body(Struct):
 
     def check(self, VAL: int | list[int] | Literal["N/A"] | None = None, DESC: str | None = None, MOD: float | str | None = None, RAW=None):
         try:
-            result = True
-            if RAW is not None:
-                result &= eval(RAW, {"raw": self.raw})
-            if VAL == "N/A":
-                result &= self.val is None
+            if RAW is not None and not (eval(RAW, {"raw": self.raw})):
+                return False
+            if VAL == "N/A" and self.val is not None:
+                return False
             elif VAL is not None:
                 if self.val is None:
                     return False
                 elif isinstance(VAL, list):
-                    result &= self.val >= VAL[0] and self.val <= VAL[1]
-                else:
-                    result &= self.val == VAL
+                    if self.val < VAL[0] or self.val > VAL[1]:
+                        return False
+                elif self.val != VAL:
+                    return False
             if DESC == "N/A":
-                result &= self.desc is None
+                if self.desc is not None:
+                    return False
             elif DESC is not None:
                 if self.desc is None:
                     return False
-                result &= self.desc == DESC
+                if self.desc != DESC:
+                    return False
             if MOD == "N/A":
-                result &= self.mod is None
+                if self.mod is not None:
+                    return False
             elif MOD is not None:
                 if self.mod is None:
                     return False
-                result &= MOD in self.mod
-            return result
+                if MOD not in self.mod:
+                    return False
+            return True
         except TypeError:
             return False
 
@@ -176,31 +185,33 @@ class Meta(Struct):
 
     def check(self, ID: str | list[str] | None = None, STEP: dict | Literal["N/A"] | None = None, CYCL: dict | Literal["N/A"] | None = None):
         try:
-            result = True
             if ID == "N/A":
-                result &= self.ID is None
+                if self.ID is not None:
+                    return False
             elif ID is not None:
                 if self.ID is None:
                     return False
-                if isinstance(ID, list):
-                    result &= self.ID in ID
-                else:
-                    result &= self.ID == ID
+                if isinstance(ID, list) and self.ID not in ID or not isinstance(ID, list) and self.ID != ID:
+                    return False
             if STEP == "N/A":
-                result &= self.step is None
+                if self.step is not None:
+                    return False
             elif STEP is not None:
                 if self.step is None:
-                    result &= set(STEP.values()) == {"N/A"}
-                else:
-                    result &= self.step.check(**STEP)
+                    if set(STEP.values()) != {"N/A"}:
+                        return False
+                elif not (self.step.check(**STEP)):
+                    return False
             if CYCL == "N/A":
-                result &= self.cycl is None
+                if self.cycl is not None:
+                    return False
             elif CYCL is not None:
                 if self.cycl is None:
-                    result &= set(CYCL.values()) == {"N/A"}
-                else:
-                    result &= self.cycl.check(**CYCL)
-            return result
+                    if set(CYCL.values()) != {"N/A"}:
+                        return False
+                elif not (self.cycl.check(**CYCL)):
+                    return False
+            return True
         except TypeError:
             return False
 
@@ -231,26 +242,26 @@ class Step(Struct):
 
     def check(self, PERC: str | list[str] | None = None, AMP: float | list[float] | Literal["N/A"] | None = None):
         try:
-            result = True
             if PERC == "N/A":
-                result &= self.perc is None
+                if self.perc is not None:
+                    return False
             elif PERC is not None:
                 if self.perc is None:
                     return False
-                if isinstance(PERC, list):
-                    result &= self.perc in PERC
-                else:
-                    result &= self.perc == PERC
+                if isinstance(PERC, list) and self.perc not in PERC or not isinstance(PERC, list) and self.perc != PERC:
+                    return False
             if AMP == "N/A":
-                result &= self.amp is None
+                if self.amp is not None:
+                    return False
             elif AMP is not None:
                 if self.amp is None:
                     return False
                 if isinstance(AMP, list):
-                    result &= self.amp >= AMP[0] and self.amp <= AMP[1]
-                else:
-                    result &= self.amp == AMP
-            return result
+                    if self.amp < AMP[0] or self.amp > AMP[1]:
+                        return False
+                elif self.amp != AMP:
+                    return False
+            return True
         except TypeError:
             return False
 
@@ -281,28 +292,29 @@ class Cycl(Struct):
         RANGE: tuple[float, float] | list[float] | Literal["N/A"] | None = None,
     ):
         try:
-            result = True
             if PERIOD == "N/A":
-                result &= self.period is None
+                if self.period is not None:
+                    return False
             elif PERIOD is not None:
                 if self.period is None:
                     return False
                 if isinstance(PERIOD, list):
-                    result &= self.period >= PERIOD[0] and self.period <= PERIOD[1]
-                else:
-                    result &= self.period == PERIOD
+                    if self.period < PERIOD[0] or self.period > PERIOD[1]:
+                        return False
+                elif self.period != PERIOD:
+                    return False
             if RANGE == "N/A":
-                result &= self.range is None
+                if self.range is not None:
+                    return False
             elif RANGE is not None:
                 if self.range is None:
                     return False
                 if isinstance(RANGE, list):
-                    result &= (
-                        self.range[0] >= RANGE[0] and self.range[0] <= RANGE[1] and self.range[1] >= RANGE[2] and self.range[1] <= RANGE[3]
-                    )
-                else:
-                    result &= self.range == RANGE
-            return result
+                    if self.range[0] < RANGE[0] or self.range[0] > RANGE[1] or self.range[1] < RANGE[2] or self.range[1] > RANGE[3]:
+                        return False
+                elif self.range != RANGE:
+                    return False
+            return True
         except TypeError:
             return False
 
