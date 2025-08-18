@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import contextlib
 import datetime
 import math
 import os
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 import cn2an
 import cutword
-import dateparser
+import dateutil
+import dateutil.parser
 import yaml
 from dateutil.relativedelta import relativedelta
 
@@ -59,7 +61,7 @@ def add_tag(seq: list[str]) -> list[tuple[dict, int | str, str | None]]:
             continue
         num = to_num(word)
         if num is None:
-            raise ValueError(f"Unknown word: {word}")
+            raise NameError(f"Unknown word: {word}")
         result.append((lexicon.get("_NUM"), num, word))
     return result
 
@@ -68,21 +70,28 @@ def first_parser(tagged: list[tuple[dict, int | str, str | None]]) -> list[Struc
     structs: list[Struct] = []
     this = Struct()
     for tag, value, raw in tagged:
+        as_word = tag.get("AS_WORD")
+        if not as_word:
+            continue
+        if isinstance(expand := as_word.get("EXPAND"), list) and len(expand) >= 1:
+            expand_structs: list[dict] = [expanding.get("STRUCT", {}) for expanding in expand]
+            for expand_struct in expand_structs:
+                if this.body is not None or this.meta is not None or this.datum is not None:
+                    structs.append(this)
+                this = Struct(expand_struct)
+            continue
         try:
-            as_word = tag.get("AS_WORD")
-            if not as_word:
-                continue
             this.add(**as_word, value=value, raw=raw)
         except AttributeError:
             if this.body is not None or this.meta is not None or this.datum is not None:
                 structs.append(this)
             this = Struct(as_word, value=value, raw=raw)
-    if this.body is not None:
+    if this.body is not None or this.meta is not None:
         structs.append(this)
     return structs
 
 
-def second_parser(structs: list[Struct]) -> list[Struct]:
+def second_parser(structs: list[Struct | Any]) -> list[Struct]:
     for struct in structs:
         struct.reset_stop()
     for struct in structs:
@@ -105,9 +114,29 @@ def second_parser(structs: list[Struct]) -> list[Struct]:
             else:
                 for i in range(match_len):
                     rule = then_list[i]
+                    if (struct_extended := rule.get("EXTEND")) is not None:
+                        structs_extended = [extending.get("STRUCT", {}) for extending in struct_extended]
+                        if not structs_extended:
+                            structs[start_idx + i] = None
+                        elif len(structs_extended) == 1:
+                            structs[start_idx + i].add(**structs_extended[0])
+                        else:
+                            struct_pack = [structs[start_idx + i]] + [Struct()] * (len(structs_extended) - 1)
+                            for pack_item in struct_pack:
+                                pack_item.add(**structs_extended.pop(0))
+                            structs[start_idx + i] = struct_pack
+                        continue
                     if struct_rule := rule.get("STRUCT"):
                         structs[start_idx + i].add(**struct_rule)
-    return structs
+    stack = []
+    for struct in structs:
+        if not struct:
+            continue
+        if isinstance(struct, list):
+            stack.extend(struct)
+        else:
+            stack.append(struct)
+    return stack
 
 
 def third_parser(structs: list[Struct], instant_merge: bool = False) -> tuple[list[Struct], relativedelta | None]:
@@ -197,74 +226,25 @@ def to_datetime(structs: list[Struct], modifier: relativedelta | None = None) ->
         dt += modifier
     try:
         rel_delta = relativedelta(**{f"{step[0]}s": int(step[1])})
-        edt = dt + rel_delta
+        edt = dt - relativedelta(seconds=1) + rel_delta
     except OverflowError:
         edt = dt
     return (dt, edt)
 
 
-def full_parse(text: str) -> tuple[datetime.datetime, datetime.datetime] | None:
+def full_parse(text: str, enable_dateutil_trial=False) -> tuple[datetime.datetime, datetime.datetime] | Literal[-1, -2, -3] | None:
+    if enable_dateutil_trial:
+        with contextlib.suppress(dateutil.parser.ParserError, OverflowError, AssertionError):
+            du = dateutil.parser.parse(text, ignoretz=True, fuzzy=True)
+            assert isinstance(du, datetime.datetime)
+            return (du, du)
     try:
         return to_datetime(*third_parser(second_parser(first_parser(add_tag(run_merge_num(cutter.cutword(text)))))))
+    except ValueError:
+        return -1
+    except NameError:
+        return -2
+    except OverflowError:
+        return -3
     except Exception:
-        # traceback.print_exc()
         return None
-
-
-if __name__ == "__main__":
-    testings = [
-        "2025年8月15日",
-        "贰零贰伍年捌月拾伍日",
-        "二〇二五年八月十五日",
-        "2025/08/15",
-        "2025年8月16日 14:30:45",
-        "2025-08-16 18:15:00",
-        "2025/08/16 23:59:59",
-        "二〇二五年八月十六日 下午三点半",
-        "二零二五年八月十六号 中午12点整",
-        "二五年8月16日 午夜12点",
-        "2025年8月16日 上午9时15分",
-        "2025-08-16 下午11:08",
-        "8月16日 凌晨3:20",
-        "8月16日 14:00",
-        "十二月三十一日 18:00",
-        "02月15日 09:30:00",
-        "16号晚上8点",
-        "01日 15:30",
-        "31日下午4点半",
-        "下午4点",
-        "上午10:15",
-        "23:45:30",
-        "今天",
-        "明天凌晨",
-        "昨天中午",
-        "三天后",
-        "两周前",
-        "下个月5号",
-        "下周二",
-        "上周三上午10点",
-        "公历2025年8月16日",
-        "2025年8月",
-        "8月",
-        "2025/8/16 PM 3:45",
-        "0001年1月1日",
-        "9999年12月31日 23:59:59",
-        "2024年2月29日",
-        "2025年13月1日",
-        "2025年2月30日",
-        "昨天25点",
-        "2025年农历八月十六",
-        "无效时间格式",
-        "2025年8月32日",
-        "嘉靖十五年",
-    ]
-    print("测试时间:", datetime.datetime.now())
-    for testing in testings:
-        print("=" * 24)
-        print(testing)
-        if dt := full_parse(testing):
-            # print(third_parser(second_parser(first_parser(add_tag(run_merge_num(cutter.cutword(testing)))))))
-            print("cn2t:\t\t", dt[0].strftime("%Y-%m-%d %H:%M:%S"), "~", dt[1].strftime("%Y-%m-%d %H:%M:%S"))
-        else:
-            print("cn2t:\t\t", "<解析失败>")
-        print("dateparser:\t", dateparser.parse(testing, languages=["zh"]) or "<解析失败>")

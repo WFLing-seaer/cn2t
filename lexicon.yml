@@ -201,7 +201,7 @@ PM:
 半:
   AS_WORD:
     BODY:
-      VAL: 30
+      DESC: 半
 
 中午:
   AS_WORD:
@@ -246,6 +246,13 @@ PM:
       MOD: 0
       STOP: ALL
       DESC: 日
+
+今年:
+  AS_WORD:
+    BODY:
+      MOD: 0
+      STOP: ALL
+      DESC: 年
 
 昨天:
   AS_WORD:
@@ -297,12 +304,6 @@ PM:
 
 以前:
   <<: *before
-
-今年:
-  AS_WORD:
-    BODY:
-      STOP: ALL
-      DESC: 年
 
 去年:
   AS_WORD:
@@ -416,3 +417,21 @@ weekday:
       year: 1521
     BODY:
       MOD: 1521
+
+元旦:
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 1
+          META:
+            ID: MO
+      - STRUCT:
+          BODY:
+            VAL: 1
+          META:
+            ID: DA
+            STEP:
+              PERC: DA
+              AMP: 1
+          STOP: ALL

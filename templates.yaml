@@ -167,3 +167,98 @@ SHORT_YEAR:
             RANGE: [94, 5] #表示向前94年，向后5年
         BODY:
           MOD: "val+struct.meta.cycl.period*math.ceil((datum-struct.meta.cycl.range[0]-val)/struct.meta.cycl.period)"
+
+MINUTE_AND_HALF:
+  WHEN:
+    - STRUCT:
+        META:
+          ID: MI
+    - STRUCT:
+        BODY:
+          DESC: 半
+  THEN:
+    - STRUCT: null
+    - STRUCT:
+        BODY:
+          VAL: 30
+        META:
+          ID: SC
+          STEP:
+            PERC: SC
+            AMP: 1
+
+HOUR_AND_HALF:
+  WHEN:
+    - STRUCT:
+        META:
+          ID: HR
+    - STRUCT:
+        BODY:
+          DESC: 半
+  THEN:
+    - STRUCT: null
+    - STRUCT:
+        BODY:
+          VAL: 30
+        META:
+          ID: MI
+          STEP:
+            PERC: MI
+            AMP: 1
+
+DAY_AND_HALF:
+  WHEN:
+    - STRUCT:
+        META:
+          ID: DA
+    - STRUCT:
+        BODY:
+          DESC: 半
+  THEN:
+    - STRUCT: null
+    - STRUCT:
+        BODY:
+          VAL: 12
+        META:
+          ID: HR
+          STEP:
+            PERC: HR
+            AMP: 1
+
+MONTH_AND_HALF:
+  WHEN:
+    - STRUCT:
+        META:
+          ID: MO
+    - STRUCT:
+        BODY:
+          DESC: 半
+  THEN:
+    - STRUCT: null
+    - STRUCT:
+        BODY:
+          VAL: 14
+        META:
+          ID: DA
+          STEP:
+            PERC: DA
+            AMP: 2
+
+YEAR_AND_HALF:
+  WHEN:
+    - STRUCT:
+        META:
+          ID: YR
+    - STRUCT:
+        BODY:
+          DESC: 半
+  THEN:
+    - STRUCT: null
+    - STRUCT:
+        BODY:
+          VAL: 6
+        META:
+          ID: MO
+          STEP:
+            PERC: MO
+            AMP: 1
