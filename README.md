@@ -2,31 +2,33 @@
 
 灵活、轻量级的中文自然语言时间解析器。  
 能够将各种中文时间表达式转换为时间范围。  
-通过自定义lexicon和template，可以实现更复杂的语法解析，~~当然也可以用来解析别的语言（确信~~  
-  
-理论上，对于中文来说，准确度能够远超[dateparser](https://github.com/scrapinghub/dateparser)。  
-  
-**整个项目不依赖任何大模型实现功能**
+通过自定义 lexicon 和 template，可以实现更复杂的语法解析，~~当然也可以用来解析别的语言（确信）~~
+
+理论上，对于中文来说，准确度能够远超[dateparser](https://github.com/scrapinghub/dateparser)。
+
+> **整个项目不依赖任何大模型实现功能**
 
 ## 适用范围
 
-- 支持几乎所有常见的时间格式，不支持的是因为lexicon还在继续写，在写了在写了.jpg
+- 支持几乎所有常见的时间格式，不支持的是因为 lexicon 还在继续写，在写了在写了.jpg
 - 仅支持阳历（格里高利历）
 - 暂不支持农历、阴历
-- 目前还不能解析嵌入句子中的时间，这点和[cn2an](https://github.com/Ailln/cn2an)不同（嗯都是NLP这么比较也没啥问题（确信
+- 目前还不能解析嵌入句子中的时间，这点和[cn2an](https://github.com/Ailln/cn2an)不同（嗯都是 NLP 这么比较也没啥问题（确信）
 
 ## 依赖项
 
 ```cmd
 pip install cn2an cutword pyyaml python-dateutil
 ```
-- [cn2an](https://github.com/Ailln/cn2an)：用于中文数字处理
-- [cutword](https://github.com/liwenju0/cutword)：用于分词（感觉比jieba好用点，但是自定义词典只能从文件加载，想交pr了）
-- [pyyaml](https://github.com/yaml/pyyaml)：用于解析yaml；说实话我真的很想把yaml编译成bson的，但是目前还不完备，所以作罢
-- [dateutil](https://github.com/dateutil/dateutil)：用于提供relativedelta，这玩意太好用了你们知道吗.jpg
 
-以及一个用来对比的
-- [dateparser](https://github.com/scrapinghub/dateparser)：对比测试用的，比较抽象的是它会把`13月1日`解析成`1月13日`而不是拒绝解析（
+- [cn2an](https://github.com/Ailln/cn2an)：用于中文数字处理
+- [cutword](https://github.com/liwenju0/cutword)：用于分词（感觉比 jieba 好用点，但是自定义词典只能从文件加载，想交 pr 了）
+- [pyyaml](https://github.com/yaml/pyyaml)：用于解析 yaml；说实话我真的很想把 yaml 编译成 bson 的，但是目前还不完备，所以作罢
+- [dateutil](https://github.com/dateutil/dateutil)：用于提供 relativedelta，这玩意太好用了你们知道吗.jpg
+
+以及一个用来对比的：
+
+- [dateparser](https://github.com/scrapinghub/dateparser)：对比测试用的，比较抽象的是它会把`13月1日`解析成`1月13日`而不是拒绝解析（）
 
 ## 快速开始
 
@@ -47,47 +49,39 @@ else: # 失败会返回None
 ## 解析流程
 
 整体分为七步，**可以拆开用**：
-1. `cutword` - 分词
 
-分词的时候把lexicon的所有词头传进去了，这样能尽量保证分出来的东西准确一点
-
-2. `run_merge_num` - 合并数字
-
-这一步是把数字合并起来，因为分词的时候数字经常会被分，这个没法避免（总不能数字打个大表吧！）
-
-3. `add_tag` - 打标
-
-打的东西不止有标签，查表也在这步完成了
-
-4. `first_parser` - 一步解析
-
-实际的解析从这开始。叫一步解析是因为我有个思路文档（没传上来）里面把这个定为第一步。
-这一步解析主要的作用是构建Struct结构。
-
-5. `second_parser` - 二步解析
-
-这一步解析主要的作用是填充Struct，通过查表和模板（就是那两个yaml）来把形式化的结构转换成具有实际内容的结构。
-
-6. `third_parser` - 三步解析
-
-这一步解析主要的作用是应用基准值、偏移量等需要数学计算的东西。
-
-7. `to_datetime` - 解析为datetime
-
-最后把结构转换成更常用的datetime。  
-当然如果可以的话，我还是建议直接和三步解析生成的结构交互，把`instant_merge`设为True之后直接生成的结构相比datetime能有更多更丰富的信息。  
+1. `cutword` - 分词  
+   分词的时候把 lexicon 的所有词头传进去了，这样能尽量保证分出来的东西准确一点。
+2. `run_merge_num` - 合并数字  
+   这一步是把数字合并起来，因为分词的时候数字经常会被分，这个没法避免（总不能数字打个大表吧！）
+3. `add_tag` - 打标  
+   打的东西不止有标签，查表也在这步完成了。
+4. `first_parser` - 一步解析  
+   实际的解析从这开始。叫一步解析是因为我有个思路文档（没传上来）里面把这个定为第一步。  
+   这一步解析主要的作用是构建 Struct 结构。
+5. `second_parser` - 二步解析  
+   这一步解析主要的作用是填充 Struct，通过查表和模板（就是那两个 yaml）来把形式化的结构转换成具有实际内容的结构。
+6. `third_parser` - 三步解析  
+   这一步解析主要的作用是应用基准值、偏移量等需要数学计算的东西。
+7. `to_datetime` - 解析为 datetime  
+   最后把结构转换成更常用的 datetime。  
+   当然如果可以的话，我还是建议直接和三步解析生成的结构交互，把`instant_merge`设为 True 之后直接生成的结构相比 datetime 能有更多更丰富的信息。
 
 （题外话：`full_parse`的实现其实是这样的——
+
 ```python
 to_datetime(*third_parser(second_parser(first_parser(add_tag(run_merge_num(cutter.cutword(text)))))))
 ```
-括   号   叠   叠   乐）
 
-# 欢迎PR
-来点lexicon吧球球惹  
-多交PR喵，多交PR谢谢喵！  
+括 号 叠 叠 乐）
 
-# 附录：`main.py`中测试样例的运行结果
+## 欢迎 PR
+
+来点 lexicon 吧球球惹！  
+多交 PR 喵，多交 PR 谢谢喵！
+
+## 附录：`main.py`中测试样例的运行结果
+
 ```log
 测试时间: 2025-08-18 03:20:31.852994
 ========================
@@ -267,4 +261,5 @@ dateparser:      <解析失败>
 cn2t:            1536-01-01 00:00:00 ~ 1537-01-01 00:00:00
 dateparser:      <解析失败>
 ```
-多交PR喵，多交PR谢谢喵  
+
+多交 PR 喵，多交 PR 谢谢喵！
