@@ -18,20 +18,34 @@ class Struct:
         if kwargs is not None:
             self.add(**kwargs, value=value, raw=raw)
 
-    def add(self, BODY: dict | None = None, META: dict | None = None, DATUM: dict | None = None, value=None, raw=None, STOP=None):
+    def add(
+        self,
+        BODY: dict | Literal["N/A"] | None = None,
+        META: dict | Literal["N/A"] | None = None,
+        DATUM: dict | Literal["N/A"] | None = None,
+        value=None,
+        raw=None,
+        STOP=None,
+    ):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
-        if BODY is not None:
+        if BODY == "N/A":
+            self.body = None
+        elif BODY is not None:
             if self.body:
                 self.body.add(**BODY, value=value, raw=raw)
             else:
                 self.body = Body(BODY, value=value, raw=raw)
-        if META is not None:
+        if META == "N/A":
+            self.meta = None
+        elif META is not None:
             if self.meta:
                 self.meta.add(**META)
             else:
                 self.meta = Meta(META)
-        if DATUM is not None:
+        if DATUM == "N/A":
+            self.datum = None
+        elif DATUM is not None:
             self.datum = Datum({k.lower(): v for k, v in DATUM.items()})
         if STOP is not None:
             self.stop(STOP)
@@ -103,14 +117,22 @@ class Body(Struct):
     mod: list[float | str] | None = None
     raw: str | None = None
 
-    def add(self, VAL: int | None = None, DESC: str | None = None, MOD: float | str | None = None, value=None, raw=None, STOP=None):
+    def add(
+        self, VAL: int | Literal["N/A"] | None = None, DESC: str | None = None, MOD: float | str | None = None, value=None, raw=None, STOP=None
+    ):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
-        if VAL is not None:
+        if VAL == "N/A":
+            self.val = None
+        elif VAL is not None:
             self.val = value if VAL == "@" and value is not None else VAL
-        if DESC is not None:
+        if DESC == "N/A":
+            self.desc = None
+        elif DESC is not None:
             self.desc = DESC
-        if MOD is not None:
+        if MOD == "N/A":
+            self.mod = None
+        elif MOD is not None:
             if self.mod is None:
                 self.mod = []
             self.mod.append(MOD)
@@ -165,17 +187,31 @@ class Meta(Struct):
     step: Step | None = None
     cycl: Cycl | None = None
 
-    def add(self, ID: str | None = None, STEP: dict | None = None, CYCL: dict | None = None, value=None, raw=None, STOP=None):
+    def add(
+        self,
+        ID: str | None = None,
+        STEP: dict | Literal["N/A"] | None = None,
+        CYCL: dict | Literal["N/A"] | None = None,
+        value=None,
+        raw=None,
+        STOP=None,
+    ):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
-        if ID is not None:
+        if ID == "N/A":
+            self.ID = None
+        elif ID is not None:
             self.ID = ID
-        if STEP is not None:
+        if STEP == "N/A":
+            self.step = None
+        elif STEP is not None:
             if self.step:
                 self.step.add(**STEP)
             else:
                 self.step = Step(STEP)
-        if CYCL is not None:
+        if CYCL == "N/A":
+            self.cycl = None
+        elif CYCL is not None:
             if self.cycl:
                 self.cycl.add(**CYCL)
             else:
@@ -230,12 +266,16 @@ class Step(Struct):
     perc: str | None = None
     amp: float | None = None
 
-    def add(self, PERC: str | None = None, AMP: float | None = None, value=None, raw=None, STOP=None):
+    def add(self, PERC: str | None = None, AMP: float | Literal["N/A"] | None = None, value=None, raw=None, STOP=None):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
-        if PERC is not None:
+        if PERC == "N/A":
+            self.perc = None
+        elif PERC is not None:
             self.perc = PERC
-        if AMP is not None:
+        if AMP == "N/A":
+            self.amp = None
+        elif AMP is not None:
             self.amp = AMP
         if STOP is not None:
             self.stop(STOP)
@@ -276,12 +316,23 @@ class Cycl(Struct):
     period: float | None = None
     range: tuple[float, float] | None = None
 
-    def add(self, PERIOD: float | None = None, RANGE: tuple[float, float] | None = None, value=None, raw=None, STOP=None):
+    def add(
+        self,
+        PERIOD: float | Literal["N/A"] | None = None,
+        RANGE: tuple[float, float] | Literal["N/A"] | None = None,
+        value=None,
+        raw=None,
+        STOP=None,
+    ):
         if self._stopped is None:
             raise AttributeError("Add failed cuz it's already stopped")
-        if PERIOD is not None:
+        if PERIOD == "N/A":
+            self.period = None
+        elif PERIOD is not None:
             self.period = PERIOD
-        if RANGE is not None:
+        if RANGE == "N/A":
+            self.range = None
+        elif RANGE is not None:
             self.range = RANGE
         if STOP is not None:
             self.stop(STOP)
@@ -335,12 +386,13 @@ class Datum:
             self.minute = datum.minute
             self.second = datum.second
         else:
-            self.year = datum.get("year")
-            self.month = datum.get("month")
-            self.day = datum.get("day")
-            self.hour = datum.get("hour")
-            self.minute = datum.get("minute")
-            self.second = datum.get("second")
+            self.year: int | None = datum.get("year")
+            self.month: int | None = datum.get("month")
+            self.day: int | None = datum.get("day")
+            self.hour: int | None = datum.get("hour")
+            self.minute: int | None = datum.get("minute")
+            self.second: int | None = datum.get("second")
+            self.lunar: bool | None = datum.get("lunar")
 
     def get_from_id(self, ID: str, amp: float = 1):
         match ID, amp:
@@ -352,6 +404,8 @@ class Datum:
                 return self.year
             case "MO", _:
                 return self.month
+            case "WK", _:
+                return self.day and self.day / 7
             case "DA", _:
                 return self.day
             case "HR", _:
@@ -361,7 +415,7 @@ class Datum:
             case "SC", _:
                 return self.second
             case _:
-                raise ValueError(f"Unknown ID: {ID}")
+                raise KeyError(f"Unknown ID: {ID}")
 
     def update(self, other: Datum):
         if other.year is not None:
@@ -376,10 +430,12 @@ class Datum:
             self.minute = other.minute
         if other.second is not None:
             self.second = other.second
+        if other.lunar is not None:
+            self.lunar = other.lunar
 
     def __repr__(self):
         return (
             f"DATUM\n  {self.year or "NA"}-{self.month or "NA":02}-{self.day or "NA":02} "
             f"{"--" if self.hour is None else self.hour:02}:{"--" if self.minute is None else self.minute:02}:"
-            f"{"--" if self.second is None else self.second:02}"
+            f"{"--" if self.second is None else self.second:02}{"（农历）"*bool(self.lunar)}"
         )

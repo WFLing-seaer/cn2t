@@ -1,3 +1,4 @@
+# region 基本功能
 _NUM:
   AS_WORD:
     BODY:
@@ -21,8 +22,8 @@ _NUM:
 明年:
   AS_WORD:
     BODY:
-      MOD: "@-1"
-      <<:: *yrb
+      MOD: 1
+      <<: *yrb
   AS_STRUCT:
     <<: *yrs
 
@@ -34,7 +35,7 @@ _NUM:
         - VAL
         - DESC
   AS_STRUCT:
-    META:
+    META: &month_meta
       ID: MO
       STEP:
         PERC: MO
@@ -71,12 +72,12 @@ _NUM:
         - VAL
         - DESC
     META:
-      ID: DA
+      ID: WK
       STEP:
         PERC: DA
         AMP: 7
       CYCL:
-        PERIOD: 7
+        PERIOD: 1
 
 星期:
   <<: *week
@@ -98,7 +99,10 @@ _NUM:
 点:
   <<: *hour
 
-分:
+小时:
+  <<: *hour
+
+分: &minute
   AS_WORD:
     BODY:
       DESC: 分
@@ -111,6 +115,9 @@ _NUM:
       STEP:
         PERC: MI
         AMP: 1
+
+分钟:
+  <<: *minute
 
 秒:
   AS_WORD:
@@ -193,7 +200,15 @@ _:
       MOD: 12
 
 晚上:
-  <<: *pm
+  AS_WORD:
+    BODY:
+      VAL: 5
+      MOD: 12
+    META:
+      ID: HR
+      STEP:
+        PERC: HR
+        AMP: 6
 
 PM:
   <<: *pm
@@ -202,6 +217,14 @@ PM:
   AS_WORD:
     BODY:
       DESC: 半
+
+个半月: #解析为“月半”，只把它单拎出来是因为我好像就能想到“x个半月”这种表述里面“半”在前面
+  AS_WORD:
+    BODY:
+      DESC: 半 #此处DESC为“半”是为了能让模板把它解析出半个月来
+      STOP: DESC
+    META: #因为没有“月”作为desc了所以需要在这里加一个meta
+      <<: *month_meta
 
 中午:
   AS_WORD:
@@ -261,6 +284,34 @@ PM:
       STOP: ALL
       DESC: 日
 
+前天:
+  AS_WORD:
+    BODY:
+      MOD: -2
+      STOP: ALL
+      DESC: 日
+
+大前天:
+  AS_WORD:
+    BODY:
+      MOD: -3
+      STOP: ALL
+      DESC: 日
+
+后天:
+  AS_WORD:
+    BODY:
+      MOD: 2
+      STOP: ALL
+      DESC: 日
+
+大后天:
+  AS_WORD:
+    BODY:
+      MOD: 3
+      STOP: ALL
+      DESC: 日
+
 公历: null
 
 下个: &next
@@ -284,7 +335,7 @@ PM:
 后: &after
   AS_WORD:
     BODY:
-      MOD: "datum + val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
+      MOD: "'#after' and val" #MOD字段也可以当自定义标签使用
       STOP: ALL
     META:
       STEP:
@@ -296,7 +347,7 @@ PM:
 前: &before
   AS_WORD:
     BODY:
-      MOD: "datum - val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
+      MOD: "'#before' and val"
       STOP: ALL
     META:
       STEP:
@@ -435,3 +486,194 @@ weekday:
               PERC: DA
               AMP: 1
           STOP: ALL
+
+农历:
+  AS_WORD:
+    DATUM:
+      lunar: true
+
+正月:
+  AS_WORD:
+    BODY:
+      VAL: 1
+      DESC: 月
+      STOP:
+        - VAL
+        - DESC
+    DATUM:
+      lunar: true
+
+冬月:
+  AS_WORD:
+    BODY:
+      VAL: 11
+      DESC: 月
+      STOP:
+        - VAL
+        - DESC
+    DATUM:
+      lunar: true
+
+腊月:
+  AS_WORD:
+    BODY:
+      VAL: 12
+      DESC: 月
+      STOP:
+        - VAL
+        - DESC
+    DATUM:
+      lunar: true
+
+闰:
+  AS_WORD:
+    BODY:
+      MOD: "-val" #用负数表示闰月
+    DATUM:
+      lunar: true
+
+初一:
+  AS_WORD:
+    BODY:
+      VAL: 1
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+初二:
+  AS_WORD:
+    BODY:
+      VAL: 2
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+初三:
+  AS_WORD:
+    BODY:
+      VAL: 3
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+初四:
+  AS_WORD:
+    BODY:
+      VAL: 4
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+初五:
+  AS_WORD:
+    BODY:
+      VAL: 5
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+初六:
+  AS_WORD:
+    BODY:
+      VAL: 6
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+初七:
+  AS_WORD:
+    BODY:
+      VAL: 7
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+初八:
+  AS_WORD:
+    BODY:
+      VAL: 8
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+初九:
+  AS_WORD:
+    BODY:
+      VAL: 9
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+初十:
+  AS_WORD:
+    BODY:
+      VAL: 10
+      STOP: VAL
+    DATUM:
+      lunar: true
+    META:
+      ID: DA
+      STEP:
+        PERC: DA
+        AMP: 1
+
+春节:
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 1
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 1
+            DESC: 日
+          DATUM:
+            lunar: true

@@ -262,3 +262,104 @@ YEAR_AND_HALF:
           STEP:
             PERC: MO
             AMP: 1
+
+DAY_CHN_NUM_ONLY: # 比如八月十五这种，中文表达+不显式写出“日”→认为是农历
+  WHEN:
+    - STRUCT:
+        META:
+          ID: MO
+    - STRUCT:
+        BODY:
+          VAL: [1, 30]
+          RAW: "not any(c in '0123456789' for c in raw)"
+          DESC: N/A
+  THEN:
+    - STRUCT:
+        DATUM:
+          lunar: true
+    - STRUCT:
+        META:
+          ID: DA
+          STEP:
+            PERC: DA
+            AMP: 1
+
+BEFORE2: #x前和x后前面的字段要么一个要么两个，三个太少见了不作考虑，因此直接枚举就行
+  WHEN:
+    - STRUCT:
+        DATUM:
+          lunar: N/A #防止“春节后”被解析成“一个月零一天后”这种事
+    - STRUCT:
+        DATUM:
+          lunar: N/A
+        BODY:
+          MOD: "'#before' and val"
+  THEN:
+    - STRUCT:
+        BODY:
+          MOD: &bm "datum - val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
+        META:
+          STEP:
+            AMP: 1
+    - STRUCT:
+        BODY:
+          MOD: *bm
+        META:
+          STEP:
+            AMP: 1
+  STOP: [BEFORE1]
+
+BEFORE1:
+  WHEN:
+    - STRUCT:
+        DATUM:
+          lunar: N/A
+        BODY:
+          MOD: "'#before' and val"
+  THEN:
+    - STRUCT:
+        BODY:
+          MOD: *bm
+        META:
+          STEP:
+            AMP: 1
+
+AFTER2:
+  WHEN:
+    - STRUCT:
+        DATUM:
+          lunar: N/A
+    - STRUCT:
+        DATUM:
+          lunar: N/A
+        BODY:
+          MOD: "'#after' and val"
+  THEN:
+    - STRUCT:
+        BODY:
+          MOD: &am "datum + val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
+        META:
+          STEP:
+            AMP: 1
+    - STRUCT:
+        BODY:
+          MOD: *am
+        META:
+          STEP:
+            AMP: 1
+  STOP: [AFTER1]
+
+AFTER1:
+  WHEN:
+    - STRUCT:
+        DATUM:
+          lunar: N/A
+        BODY:
+          MOD: "'#after' and val"
+  THEN:
+    - STRUCT:
+        BODY:
+          MOD: *am
+        META:
+          STEP:
+            AMP: 1
