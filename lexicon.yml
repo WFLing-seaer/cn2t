@@ -243,7 +243,20 @@ PM:
 半夜:
   <<: *midnight
 
-上午: null
+上午: &am
+  AS_WORD:
+    BODY:
+      VAL: 6
+      DESC: 时
+
+AM:
+  <<: *am
+
+早上:
+  <<: *am
+
+早:
+  <<: *am
 
 凌晨:
   AS_WORD:
@@ -256,12 +269,15 @@ PM:
         PERC: HR
         AMP: 5
 
-明天:
+明天: &tomorrow
   AS_WORD:
     BODY:
       MOD: 1
       STOP: ALL
       DESC: 日
+
+明:
+  <<: *tomorrow
 
 今天:
   AS_WORD:
@@ -662,7 +678,7 @@ weekday:
         PERC: DA
         AMP: 1
 
-春节:
+春节: &lny01
   AS_WORD:
     EXPAND:
       - STRUCT:
@@ -677,3 +693,279 @@ weekday:
             DESC: 日
           DATUM:
             lunar: true
+
+大年初一:
+  <<: *lny01
+
+年初一:
+  <<: *lny01
+
+大年初二: &lny02
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 1
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 2
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年初二:
+  <<: *lny02
+
+大年初三: &lny03
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 1
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 3
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年初三:
+  <<: *lny03
+
+大年初四: &lny04
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 1
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 4
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年初四:
+  <<: *lny04
+
+大年初五: &lny05
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 1
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 5
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年初五:
+  <<: *lny05
+
+大年初六: &lny06
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 1
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 6
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年初六:
+  <<: *lny06
+
+大年初七: &lny07
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 1
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 7
+            DESC: 日
+          DATUM:
+            lunar: true
+
+
+年初七:
+  <<: *lny07
+
+大年三十: &lny30
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 12
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 30
+            DESC: 日
+          DATUM:
+            lunar: true
+
+除夕:
+  <<: *lny30
+
+年三十:
+  <<: *lny30
+
+大年二十九: &lny29
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 12
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 29
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年二十九:
+  <<: *lny29
+
+大年二十八: &lny28
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 12
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 28
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年二十八:
+  <<: *lny28
+
+大年二十七: &lny27
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 12
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 27
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年二十七:
+  <<: *lny27
+
+大年二十六: &lny26
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 12
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 26
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年二十六:
+  <<: *lny26
+
+大年二十五: &lny25
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 12
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 25
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年二十五:
+  <<: *lny25
+
+大年二十四: &lny24
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 12
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 24
+            DESC: 日
+          DATUM:
+            lunar: true
+
+年二十四:
+  <<: *lny24
+
+年二十三: &lny23
+  AS_WORD:
+    EXPAND:
+      - STRUCT:
+          BODY:
+            VAL: 12
+            DESC: 月
+          DATUM:
+            lunar: true
+      - STRUCT:
+          BODY:
+            VAL: 23
+            DESC: 日
+          DATUM:
+            lunar: true
+
+小年: 
+  <<: *lny23
