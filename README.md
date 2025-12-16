@@ -46,12 +46,12 @@ from main import full_parse
 # 虽然说我明明可以给它起个别的名字的但我就是叫main怎么你了（不是
 
 result = full_parse("2025年8月15日下午3点半")
-if result:
+if not isinstance(result, int):
     start_time, end_time = result
     print(f"开始时间: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"结束时间: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
-else: # 失败会返回None
-    print("解析失败")
+else: # 失败会返回一个整型
+    print("解析失败") # 需要的话可以取原因
 ```
 
 ## 解析流程
