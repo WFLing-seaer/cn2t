@@ -1,5 +1,5 @@
 cn2an
 cutword
 pyyaml
-dateutil
+python-dateutil
 LunarCalendar
