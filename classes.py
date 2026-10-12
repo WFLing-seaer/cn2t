@@ -186,12 +186,14 @@ class Meta(Struct):
     ID: str | None = None
     step: Step | None = None
     cycl: Cycl | None = None
+    ambig: bool | None = None
 
     def add(
         self,
         ID: str | None = None,
         STEP: dict | Literal["N/A"] | None = None,
         CYCL: dict | Literal["N/A"] | None = None,
+        AMBIG: bool | Literal["N/A"] | None = None,
         value=None,
         raw=None,
         STOP=None,
@@ -216,6 +218,10 @@ class Meta(Struct):
                 self.cycl.add(**CYCL)
             else:
                 self.cycl = Cycl(CYCL)
+        if AMBIG == "N/A":
+            self.ambig = None
+        elif AMBIG is not None:
+            self.ambig = AMBIG
         if STOP is not None:
             self.stop(STOP)
 
@@ -259,7 +265,7 @@ class Meta(Struct):
             self.cycl.reset_stop()
 
     def __repr__(self):
-        return f"META\n  ID: {self.ID}\n{tab(2, repr(self.step))}\n{tab(2, repr(self.cycl))}"
+        return f"META\n  ID: {self.ID}\n{tab(2, repr(self.step))}\n{tab(2, repr(self.cycl))}" + ("\n  AMBIG: true" if self.ambig else "")
 
 
 class Step(Struct):

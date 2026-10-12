@@ -156,6 +156,7 @@ SHORT_YEAR:
         BODY:
           RAW: "len(raw) <= 3"
           VAL: [0, 99]
+          MOD: "N/A"
         META:
           ID: YR
         DATUM: N/A
@@ -284,6 +285,35 @@ DAY_CHN_NUM_ONLY: # 比如八月十五这种，中文表达+不显式写出“�
             PERC: DA
             AMP: 1
 
+BEFORE2_CAL:
+  WHEN:
+    - STRUCT:
+        META:
+          ID: [YR, MO]
+        DATUM:
+          lunar: N/A
+    - STRUCT:
+        DATUM:
+          lunar: N/A
+        BODY:
+          MOD: "'#before' and val"
+  THEN:
+    - STRUCT:
+        BODY:
+          MOD: &bm "datum - val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
+        META:
+          STEP:
+            AMP: 1
+          AMBIG: true
+    - STRUCT:
+        BODY:
+          MOD: *bm
+        META:
+          STEP:
+            AMP: 1
+          AMBIG: true
+  STOP: [BEFORE1, BEFORE2]
+
 BEFORE2: #x前和x后前面的字段要么一个要么两个，三个太少见了不作考虑，因此直接枚举就行
   WHEN:
     - STRUCT:
@@ -297,7 +327,7 @@ BEFORE2: #x前和x后前面的字段要么一个要么两个，三个太少见�
   THEN:
     - STRUCT:
         BODY:
-          MOD: &bm "datum - val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
+          MOD: *bm
         META:
           STEP:
             AMP: 1
@@ -324,6 +354,35 @@ BEFORE1:
           STEP:
             AMP: 1
 
+AFTER2_CAL:
+  WHEN:
+    - STRUCT:
+        META:
+          ID: [YR, MO]
+        DATUM:
+          lunar: N/A
+    - STRUCT:
+        DATUM:
+          lunar: N/A
+        BODY:
+          MOD: "'#after' and val"
+  THEN:
+    - STRUCT:
+        BODY:
+          MOD: &am "datum + val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
+        META:
+          STEP:
+            AMP: 1
+          AMBIG: true
+    - STRUCT:
+        BODY:
+          MOD: *am
+        META:
+          STEP:
+            AMP: 1
+          AMBIG: true
+  STOP: [AFTER1, AFTER2]
+
 AFTER2:
   WHEN:
     - STRUCT:
@@ -337,7 +396,7 @@ AFTER2:
   THEN:
     - STRUCT:
         BODY:
-          MOD: &am "datum + val * (struct.meta and struct.meta.cycl and struct.meta.cycl.period or struct.meta.step and struct.meta.step.amp or 1)"
+          MOD: *am
         META:
           STEP:
             AMP: 1

@@ -4,6 +4,7 @@ import contextlib
 import datetime
 import math
 import os
+import tempfile
 import traceback
 from collections import defaultdict
 from typing import Any, Literal, cast
@@ -17,12 +18,14 @@ from dateutil.relativedelta import relativedelta
 
 from .classes import Datum, Struct
 
-with open("R:/Python314/Lib/site-packages/cn2t/templates.yaml", encoding="utf-8") as f:
+this_package_path = os.path.dirname(os.path.abspath(__file__))
+
+with open(f"{this_package_path}/templates.yaml", encoding="utf-8") as f:
     templates = cast(dict, yaml.safe_load(f))
-with open("R:/Python314/Lib/site-packages/cn2t/lexicon.yml", encoding="utf-8") as f:
+with open(f"{this_package_path}/lexicon.yml", encoding="utf-8") as f:
     lexicon = cast(dict, yaml.safe_load(f))
 keywords = lexicon.keys()
-path_kwd_temp = "Z:/cn2t_kwd.txt" or os.path.expandvars("%temp%/cn2t_kwd.txt")
+path_kwd_temp = os.path.join(tempfile.gettempdir(), "cn2t_kwd.txt")
 with open(path_kwd_temp, "w", encoding="utf-8") as f:
     CUTWORD_EXCLUDE = {"_NUM", ".", " "}
     f.write("\n".join(keyword + "\t1\tN" for keyword in keywords if keyword not in CUTWORD_EXCLUDE))
@@ -179,7 +182,7 @@ def third_parser(
         if not instant_merge and struct.meta is not None and struct.meta.ID is not None:
             key = field_map[struct.meta.ID]
             if key == "WK":
-                mod_fields["days"] += int((tmp_val - val) * 7)
+                mod_fields["days"] += round((tmp_val - val) * 7)
             else:
                 mod_fields[key] += int(tmp_val - val)
         else:
@@ -225,9 +228,13 @@ def to_datetime(
         ):
             step = (struct.meta.step.perc, struct.meta.step.amp)
     now = now or datetime.datetime.now()
-    for must in ("YR", "MO", "DA"):
-        if field_map[must] not in fields:
-            fields[field_map[must]] = getattr(now, field_map[must].removesuffix("s")) if perc_level[must] < perc_level[step[0]] else 1
+    for must in ("YR", "MO", "DA", "HR", "MI", "SC"):
+        if field_map[must] in fields:
+            continue
+        if perc_level[must] < perc_level[step[0]]:
+            fields[field_map[must]] = getattr(now, field_map[must].removesuffix("s"))
+        elif must in ("YR", "MO", "DA"):
+            fields[field_map[must]] = 1
     step = (field_map[step[0]], step[1])
     if "CE" in fields:
         fields["years"] = fields.get("years", 0) + fields["CE"] * 100
@@ -239,7 +246,14 @@ def to_datetime(
         step = ("years", step[1] * 100)
     elif step[0] == "WK":
         step = ("days", step[1])  # 不乘7
-    dt = datetime.datetime(1,1,1,0,0,0,0) + relativedelta(**fields) - relativedelta(years=1,months=1,days=1)
+    dt = datetime.datetime(1, 1, 1) + relativedelta(
+        years=fields["years"] - 1,
+        months=fields["months"] - 1,
+        days=fields["days"] - 1,
+        hours=fields.get("hours", 0),
+        minutes=fields.get("minutes", 0),
+        seconds=fields.get("seconds", 0),
+    )
     if modifier is not None:
         dt += modifier
 
@@ -257,7 +271,7 @@ def to_datetime(
 
     try:
         rel_delta = relativedelta(**{step[0]: int(step[1])})  # type: ignore
-        edt = dt - relativedelta(seconds=1) + rel_delta
+        edt = dt + rel_delta - relativedelta(seconds=1)
     except OverflowError:
         edt = dt
     return (dt, edt)
