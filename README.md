@@ -41,9 +41,7 @@ pip install lunarcalendar dateparser jionlp
 ## 快速开始
 
 ```python
-from main import full_parse
-# from main是因为这玩意是个模块不是个包……
-# 虽然说我明明可以给它起个别的名字的但我就是叫main怎么你了（不是
+from cn2t import full_parse
 
 result = full_parse("2025年8月15日下午3点半")
 if not isinstance(result, int):
