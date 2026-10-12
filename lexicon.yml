@@ -74,8 +74,8 @@ _NUM:
     META:
       ID: WK
       STEP:
-        PERC: DA
-        AMP: 7
+        PERC: WK #自然周：锚在基准日所在周的周一，理由见 修复说明-自然周.md
+        AMP: 7 #按天计，一周是7天
       CYCL:
         PERIOD: 1
 
@@ -347,6 +347,15 @@ AM:
 
 上:
   <<: *prev
+
+本: &this #当前周期，不偏移
+  AS_WORD:
+    BODY:
+      MOD: "val"
+      STOP: VAL
+
+这:
+  <<: *this
 
 后: &after
   AS_WORD:

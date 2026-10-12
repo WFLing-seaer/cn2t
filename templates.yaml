@@ -422,3 +422,15 @@ AFTER1:
         META:
           STEP:
             AMP: 1
+
+WEEK_COUNT:
+  WHEN:
+    - STRUCT:
+        BODY:
+          VAL: [-9999, 9999]
+          DESC: 周
+  THEN:
+    - STRUCT:
+        META:
+          STEP:
+            PERC: DA

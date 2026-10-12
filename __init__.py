@@ -235,6 +235,17 @@ def to_datetime(
             fields[field_map[must]] = getattr(now, field_map[must].removesuffix("s"))
         elif must in ("YR", "MO", "DA"):
             fields[field_map[must]] = 1
+    week_struct = any(
+        struct.meta is not None
+        and struct.meta.ID == "WK"
+        and struct.meta.step is not None
+        and struct.meta.step.perc == "WK"
+        for struct in structs
+    )
+    if week_struct:
+        monday = now - datetime.timedelta(days=now.weekday())
+        fields["years"], fields["months"], fields["days"] = monday.year, monday.month, monday.day
+        fields.pop("WK", None)
     step = (field_map[step[0]], step[1])
     if "CE" in fields:
         fields["years"] = fields.get("years", 0) + fields["CE"] * 100
